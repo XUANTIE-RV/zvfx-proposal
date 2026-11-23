@@ -1,0 +1,59 @@
+# Copyright © 2026 Alibaba Damo Academy. All rights reserved.
+# This specification is licensed under the Creative Commons Attribution 4.0
+# International License (CC BY 4.0).
+# SPDX-License-Identifier: CC-BY-4.0
+
+# yaml-language-server: $schema=../../../schemas/ext_schema.json
+
+$schema: "ext_schema.json#"
+kind: extension
+name: Zvfc
+long_name: Vector Floating-Point Complex Arithmetic
+type: unprivileged
+doc_license:
+  name: Creative Commons Attribution 4.0 International License
+  url: https://creativecommons.org/licenses/by/4.0/
+requirements:
+  extension:
+    name: Zve32f
+    version: "= 1.0.0"
+versions:
+  - version: "0.1.0"
+    state: development
+description: |
+  `Zvfc` provides vector floating-point complex arithmetic instructions built on
+  the RISC-V Vector Extension (RVV). Each complex number is stored as a pair of
+  adjacent scalar elements in a vector register group: the even-indexed element
+  holds the real part and the odd-indexed element holds the imaginary part. The
+  vector length `vl` counts individual scalar elements, not complex pairs.
+
+  Two instruction forms are provided:
+
+  * `.vv` (vector-vector): corresponding complex element pairs from both source
+    register groups `vs2` and `vs1` participate in the operation.
+  * `.vs` (vector-scalar broadcast): `vs2` is a vector register group read
+    element-wise; `vs1` holds a complex scalar element group that is broadcast
+    to every destination complex element pair.
+
+  For implementations with VLEN >= 2*SEW, `vs1` refers to a single register;
+  otherwise, `vs1` refers to a register group comprised of the number of
+  registers needed to hold the 2*SEW-bit scalar element group. The destination
+  `vd` register group must not overlap the register or register group that
+  `vs1` refers to. The scalar element group is read independently of `vl`,
+  `vstart`, and the mask register.
+
+  A vector register group must be able to hold at least one complete complex
+  element pair: the instruction is reserved if `LMUL*VLEN < 2*SEW`.
+
+  Supported SEW values are the same as for the standard vector floating-point
+  arithmetic instructions.
+
+  Multiply-accumulate instructions use a fused operation for each component: the
+  product is not rounded before accumulation.
+
+  Execution follows standard RVV rules for masking (`vma`), tail agnosticism
+  (`vta`), and `vstart` resume. Odd `vl` values are supported; an odd `vstart`
+  is reserved. Complex pairs are aligned to even element indices; the
+  instruction may read one element past `vl` (when `vl` is odd) in the source
+  vector register groups. Only active output elements produce floating-point
+  exception flags.

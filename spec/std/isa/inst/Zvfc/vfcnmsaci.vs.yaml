@@ -1,0 +1,88 @@
+# Copyright © 2026 Alibaba Damo Academy. All rights reserved.
+# This specification is licensed under the Creative Commons Attribution 4.0
+# International License (CC BY 4.0).
+# SPDX-License-Identifier: CC-BY-4.0
+
+# yaml-language-server: $schema=../../../../schemas/inst_schema.json
+
+$schema: "inst_schema.json#"
+kind: instruction
+name: vfcnmsaci.vs
+long_name: Vector Floating-Point Complex Negated Multiply-Subtract-Accumulate Imaginary Contribution (vector-scalar broadcast)
+description: |
+  Fused negative multiply-accumulate of the imaginary-part contribution
+  `I = j * Im(A) * B` from the accumulator `C` held in `vd`, computing `C - I`,
+  where `B` is a complex scalar.
+
+  For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+  `B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`, and `C = e + j*f`
+  from the old value of `vd`. The result is:
+
+    vd[i]   = (b * d) + e
+    vd[i+1] = ((-b) * c) + f
+
+  This follows the RVV `nmsac` convention: `vd = vd - (vs1 * vs2)`.
+
+  `vs1` holds a complex scalar element group that is used as the complex
+  multiplier for all of the destination complex element pairs.
+
+  `vs2` is a vector register group; each complex pair is read from the
+  corresponding element indices. Odd `vl` is supported; an odd `vstart` is
+  reserved.
+
+  Supported SEW values are the same as for the standard vector floating-point
+  arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+  (a vector register group must hold at least one complete complex element
+  pair).
+
+  The destination `vd` register group must not overlap the register or
+  register group that `vs1` refers to.
+
+  Each output element is independently masked. Only active elements produce
+  floating-point exception flags and update `vd`. On normal completion
+  `vstart` is cleared to zero.
+
+  [source]
+  ----
+  // reserved unless LMUL*VLEN >= 2*SEW
+  c = vs1[0]
+  d = vs1[1]
+  for i from vstart to vl-1 step 2:
+    b = vs2[i+1]
+    e = vd[i]
+    f = vd[i+1]
+    if active(i):
+      vd[i] = fp_fma(b, d, e)
+    // i < vstart is prestart (unchanged); inactive elements follow VMA
+    if active(i+1):
+      vd[i+1] = fp_fma(fp_neg(b), c, f)
+    // inactive element at i+1 follows VMA
+  // tail elements (vl <= idx < VLMAX) follow VTA
+  ----
+
+  where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+  `fp_neg(x)` is the negation of `x`; `fp_fma(x, y, z)` is the fused
+  multiply-add computing `x*y + z` (argument order as IEEE 754
+  `fusedMultiplyAdd`).
+definedBy:
+  extension:
+    name: Zvfc
+assembly: vd, vs1, vs2, vm
+encoding:
+  match: 011010-----------101-----1010111
+  variables:
+    - name: vm
+      location: 25-25
+    - name: vs2
+      location: 24-20
+    - name: vs1
+      location: 19-15
+    - name: vd
+      location: 11-7
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+data_independent_timing: false
+operation(): |

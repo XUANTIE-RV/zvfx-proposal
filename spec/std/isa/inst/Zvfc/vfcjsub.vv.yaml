@@ -1,0 +1,75 @@
+# Copyright © 2026 Alibaba Damo Academy. All rights reserved.
+# This specification is licensed under the Creative Commons Attribution 4.0
+# International License (CC BY 4.0).
+# SPDX-License-Identifier: CC-BY-4.0
+
+# yaml-language-server: $schema=../../../../schemas/inst_schema.json
+
+$schema: "inst_schema.json#"
+kind: instruction
+name: vfcjsub.vv
+long_name: Vector Floating-Point Complex Subtract with j Rotation (vector-vector)
+description: |
+  Subtracts the second source complex pair multiplied by j (rotated +90 degrees)
+  from the first source complex pair.
+
+  For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+  and `B = c + j*d` from `vs1`. The result is:
+
+    vd[i]   = a + d
+    vd[i+1] = b - c
+
+  Both `vs2` and `vs1` are vector register groups; each complex pair is read
+  from the corresponding element indices. Odd `vl` is supported; an odd
+  `vstart` is reserved.
+
+  Supported SEW values are the same as for the standard vector floating-point
+  arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+  (a vector register group must hold at least one complete complex element
+  pair).
+
+  Each output element is independently masked. Only active elements produce
+  floating-point exception flags and update `vd`. On normal completion
+  `vstart` is cleared to zero.
+
+  [source]
+  ----
+  // reserved unless LMUL*VLEN >= 2*SEW
+  for i from vstart to vl-1 step 2:
+    a = vs2[i]
+    b = vs2[i+1]
+    c = vs1[i]
+    d = vs1[i+1]
+    if active(i):
+      vd[i] = fp_add(a, d)
+    // i < vstart is prestart (unchanged); inactive elements follow VMA
+    if active(i+1):
+      vd[i+1] = fp_sub(b, c)
+    // inactive element at i+1 follows VMA
+  // tail elements (vl <= idx < VLMAX) follow VTA
+  ----
+
+  where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+  `fp_add(x, y)` and `fp_sub(x, y)` are IEEE 754 addition and subtraction.
+definedBy:
+  extension:
+    name: Zvfc
+assembly: vd, vs2, vs1, vm
+encoding:
+  match: 001101-----------001-----1010111
+  variables:
+    - name: vm
+      location: 25-25
+    - name: vs2
+      location: 24-20
+    - name: vs1
+      location: 19-15
+    - name: vd
+      location: 11-7
+access:
+  s: always
+  u: always
+  vs: always
+  vu: always
+data_independent_timing: false
+operation(): |

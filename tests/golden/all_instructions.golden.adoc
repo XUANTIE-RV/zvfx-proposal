@@ -43110,6 +43110,192 @@ Included in::
 
 
 
+[#udb:doc:inst:vfcjadd_vv]
+== vfcjadd.vv
+
+Synopsis::
+Vector Floating-Point Complex Add with j Rotation (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcjadd.vv vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0xc,"type":2}]}
+....
+
+Description::
+Adds the second source complex pair multiplied by j (rotated +90 degrees) to
+the first source complex pair.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` from `vs1`. The result is:
+
+  vd[i]   = a - d
+  vd[i+1] = b + c
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  b = vs2[i+1]
+  c = vs1[i]
+  d = vs1[i+1]
+  if active(i):
+    vd[i] = fp_sub(a, d)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_add(b, c)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_add(x, y)` and `fp_sub(x, y)` are IEEE 754 addition and subtraction.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcjsub_vv]
+== vfcjsub.vv
+
+Synopsis::
+Vector Floating-Point Complex Subtract with j Rotation (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcjsub.vv vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0xd,"type":2}]}
+....
+
+Description::
+Subtracts the second source complex pair multiplied by j (rotated +90 degrees)
+from the first source complex pair.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` from `vs1`. The result is:
+
+  vd[i]   = a + d
+  vd[i+1] = b - c
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  b = vs2[i+1]
+  c = vs1[i]
+  d = vs1[i+1]
+  if active(i):
+    vd[i] = fp_add(a, d)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_sub(b, c)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_add(x, y)` and `fp_sub(x, y)` are IEEE 754 addition and subtraction.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
 [#udb:doc:inst:vfclass_v]
 == vfclass.v
 
@@ -43156,6 +43342,1591 @@ Included in::
 | Extension | Version
 
 | *Zvl32b*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcmacci_vs]
+== vfcmacci.vs
+
+Synopsis::
+Vector Floating-Point Complex Multiply-Accumulate Imaginary Contribution (vector-scalar broadcast)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcmacci.vs vd, vs1, vs2, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x5,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x15,"type":2}]}
+....
+
+Description::
+Fused multiply-accumulate of the imaginary-part contribution
+`I = j * Im(A) * B` into the accumulator xref:exts:C.adoc#udb:doc:ext:C[C] held in `vd`, where xref:exts:B.adoc#udb:doc:ext:B[B] is a
+complex scalar.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+`B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`, and `C = e + j*f`
+from the old value of `vd`. The result is:
+
+  vd[i]   = ((-b) * d) + e
+  vd[i+1] = (b * c) + f
+
+`vs1` holds a complex scalar element group that is used as the complex
+multiplier for all of the destination complex element pairs.
+
+`vs2` is a vector register group; each complex pair is read from the
+corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is
+reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+The destination `vd` register group must not overlap the register or
+register group that `vs1` refers to.
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+c = vs1[0]
+d = vs1[1]
+for i from vstart to vl-1 step 2:
+  b = vs2[i+1]
+  e = vd[i]
+  f = vd[i+1]
+  if active(i):
+    vd[i] = fp_fma(fp_neg(b), d, e)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_fma(b, c, f)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_fma(x, y, z)` is the fused
+multiply-add computing `x*y + z` (argument order as IEEE 754
+`fusedMultiplyAdd`).
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcmacci_vv]
+== vfcmacci.vv
+
+Synopsis::
+Vector Floating-Point Complex Multiply-Accumulate Imaginary Contribution (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcmacci.vv vd, vs1, vs2, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x15,"type":2}]}
+....
+
+Description::
+Fused multiply-accumulate of the imaginary-part contribution `I = j * Im(A) * B`
+into the accumulator xref:exts:C.adoc#udb:doc:ext:C[C] held in `vd`.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+`B = c + j*d` from `vs1`, and `C = e + j*f` from the old value of `vd`. The
+result is:
+
+  vd[i]   = ((-b) * d) + e
+  vd[i+1] = (b * c) + f
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  b = vs2[i+1]
+  c = vs1[i]
+  d = vs1[i+1]
+  e = vd[i]
+  f = vd[i+1]
+  if active(i):
+    vd[i] = fp_fma(fp_neg(b), d, e)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_fma(b, c, f)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_fma(x, y, z)` is the fused
+multiply-add computing `x*y + z` (argument order as IEEE 754
+`fusedMultiplyAdd`).
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcmaccr_vs]
+== vfcmaccr.vs
+
+Synopsis::
+Vector Floating-Point Complex Multiply-Accumulate Real Contribution (vector-scalar broadcast)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcmaccr.vs vd, vs1, vs2, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x5,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x14,"type":2}]}
+....
+
+Description::
+Fused multiply-accumulate of the real-part contribution `R = Re(A) * B` into
+the accumulator xref:exts:C.adoc#udb:doc:ext:C[C] held in `vd`, where xref:exts:B.adoc#udb:doc:ext:B[B] is a complex scalar.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+`B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`, and `C = e + j*f`
+from the old value of `vd`. The result is:
+
+  vd[i]   = (a * c) + e
+  vd[i+1] = (a * d) + f
+
+`vs1` holds a complex scalar element group that is used as the complex
+multiplier for all of the destination complex element pairs.
+
+`vs2` is a vector register group; each complex pair is read from the
+corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is
+reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+The destination `vd` register group must not overlap the register or
+register group that `vs1` refers to.
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+c = vs1[0]
+d = vs1[1]
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  e = vd[i]
+  f = vd[i+1]
+  if active(i):
+    vd[i] = fp_fma(a, c, e)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_fma(a, d, f)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_fma(x, y, z)` is the fused multiply-add computing `x*y + z` (argument
+order as IEEE 754 `fusedMultiplyAdd`).
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcmaccr_vv]
+== vfcmaccr.vv
+
+Synopsis::
+Vector Floating-Point Complex Multiply-Accumulate Real Contribution (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcmaccr.vv vd, vs1, vs2, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x14,"type":2}]}
+....
+
+Description::
+Fused multiply-accumulate of the real-part contribution `R = Re(A) * B` into
+the accumulator xref:exts:C.adoc#udb:doc:ext:C[C] held in `vd`.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+`B = c + j*d` from `vs1`, and `C = e + j*f` from the old value of `vd`. The
+result is:
+
+  vd[i]   = (a * c) + e
+  vd[i+1] = (a * d) + f
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  c = vs1[i]
+  d = vs1[i+1]
+  e = vd[i]
+  f = vd[i+1]
+  if active(i):
+    vd[i] = fp_fma(a, c, e)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_fma(a, d, f)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_fma(x, y, z)` is the fused multiply-add computing `x*y + z` (argument
+order as IEEE 754 `fusedMultiplyAdd`).
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcmuli_vs]
+== vfcmuli.vs
+
+Synopsis::
+Vector Floating-Point Complex Multiply Imaginary Contribution (vector-scalar broadcast)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcmuli.vs vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x5,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x23,"type":2}]}
+....
+
+Description::
+Computes the imaginary-part contribution `I = j * Im(A) * B` of the full
+complex product `A * B`, where xref:exts:B.adoc#udb:doc:ext:B[B] is a complex scalar.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`. The result is:
+
+  vd[i]   = (-b) * d
+  vd[i+1] = b * c
+
+`vs1` holds a complex scalar element group that is used as the complex
+multiplier for all of the destination complex element pairs.
+
+`vs2` is a vector register group; each complex pair is read from the
+corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is
+reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+The destination `vd` register group must not overlap the register or
+register group that `vs1` refers to.
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+c = vs1[0]
+d = vs1[1]
+for i from vstart to vl-1 step 2:
+  b = vs2[i+1]
+  if active(i):
+    vd[i] = fp_mul(fp_neg(b), d)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_mul(b, c)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_mul(x, y)` is IEEE 754
+multiplication.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcmuli_vv]
+== vfcmuli.vv
+
+Synopsis::
+Vector Floating-Point Complex Multiply Imaginary Contribution (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcmuli.vv vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x23,"type":2}]}
+....
+
+Description::
+Computes the imaginary-part contribution `I = j * Im(A) * B` of the full
+complex product `A * B`.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` from `vs1`. The result is:
+
+  vd[i]   = (-b) * d
+  vd[i+1] = b * c
+
+The full complex product `A*B = (a*c - b*d) + j*(a*d + b*c)` is decomposed
+into two partial contributions: `R = Re(A)*B` (computed by `vfcmulr`) and
+`I = j*Im(A)*B` (this instruction). Each contribution is independently
+rounded; combining them does not yield a single-rounded complex multiply.
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  b = vs2[i+1]
+  c = vs1[i]
+  d = vs1[i+1]
+  if active(i):
+    vd[i] = fp_mul(fp_neg(b), d)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_mul(b, c)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_mul(x, y)` is IEEE 754
+multiplication.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcmulr_vs]
+== vfcmulr.vs
+
+Synopsis::
+Vector Floating-Point Complex Multiply Real Contribution (vector-scalar broadcast)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcmulr.vs vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x5,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x22,"type":2}]}
+....
+
+Description::
+Computes the real-part contribution `R = Re(A) * B` of the full complex
+product `A * B`, where xref:exts:B.adoc#udb:doc:ext:B[B] is a complex scalar.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`. The result is:
+
+  vd[i]   = a * c
+  vd[i+1] = a * d
+
+`vs1` holds a complex scalar element group that is used as the complex
+multiplier for all of the destination complex element pairs.
+
+`vs2` is a vector register group; each complex pair is read from the
+corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is
+reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+The destination `vd` register group must not overlap the register or
+register group that `vs1` refers to.
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+c = vs1[0]
+d = vs1[1]
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  if active(i):
+    vd[i] = fp_mul(a, c)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_mul(a, d)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_mul(x, y)` is IEEE 754 multiplication.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcmulr_vv]
+== vfcmulr.vv
+
+Synopsis::
+Vector Floating-Point Complex Multiply Real Contribution (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcmulr.vv vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x22,"type":2}]}
+....
+
+Description::
+Computes the real-part contribution `R = Re(A) * B` of the full complex
+product `A * B`.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` from `vs1`. The result is:
+
+  vd[i]   = a * c
+  vd[i+1] = a * d
+
+The full complex product `A*B = (a*c - b*d) + j*(a*d + b*c)` is decomposed
+into two partial contributions: `R = Re(A)*B` (this instruction) and
+`I = j*Im(A)*B` (computed by `vfcmuli`). Each contribution is independently
+rounded; combining them does not yield a single-rounded complex multiply.
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  c = vs1[i]
+  d = vs1[i+1]
+  if active(i):
+    vd[i] = fp_mul(a, c)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_mul(a, d)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_mul(x, y)` is IEEE 754 multiplication.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcnmsaci_vs]
+== vfcnmsaci.vs
+
+Synopsis::
+Vector Floating-Point Complex Negated Multiply-Subtract-Accumulate Imaginary Contribution (vector-scalar broadcast)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcnmsaci.vs vd, vs1, vs2, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x5,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x1a,"type":2}]}
+....
+
+Description::
+Fused negative multiply-accumulate of the imaginary-part contribution
+`I = j * Im(A) * B` from the accumulator xref:exts:C.adoc#udb:doc:ext:C[C] held in `vd`, computing `C - I`,
+where xref:exts:B.adoc#udb:doc:ext:B[B] is a complex scalar.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+`B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`, and `C = e + j*f`
+from the old value of `vd`. The result is:
+
+  vd[i]   = (b * d) + e
+  vd[i+1] = ((-b) * c) + f
+
+This follows the RVV `nmsac` convention: `vd = vd - (vs1 * vs2)`.
+
+`vs1` holds a complex scalar element group that is used as the complex
+multiplier for all of the destination complex element pairs.
+
+`vs2` is a vector register group; each complex pair is read from the
+corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is
+reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+The destination `vd` register group must not overlap the register or
+register group that `vs1` refers to.
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+c = vs1[0]
+d = vs1[1]
+for i from vstart to vl-1 step 2:
+  b = vs2[i+1]
+  e = vd[i]
+  f = vd[i+1]
+  if active(i):
+    vd[i] = fp_fma(b, d, e)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_fma(fp_neg(b), c, f)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_fma(x, y, z)` is the fused
+multiply-add computing `x*y + z` (argument order as IEEE 754
+`fusedMultiplyAdd`).
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcnmsaci_vv]
+== vfcnmsaci.vv
+
+Synopsis::
+Vector Floating-Point Complex Negated Multiply-Subtract-Accumulate Imaginary Contribution (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcnmsaci.vv vd, vs1, vs2, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x1a,"type":2}]}
+....
+
+Description::
+Fused negative multiply-accumulate of the imaginary-part contribution
+`I = j * Im(A) * B` from the accumulator xref:exts:C.adoc#udb:doc:ext:C[C] held in `vd`, computing `C - I`.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+`B = c + j*d` from `vs1`, and `C = e + j*f` from the old value of `vd`. The
+result is:
+
+  vd[i]   = (b * d) + e
+  vd[i+1] = ((-b) * c) + f
+
+This follows the RVV `nmsac` convention: `vd = vd - (vs1 * vs2)`.
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  b = vs2[i+1]
+  c = vs1[i]
+  d = vs1[i+1]
+  e = vd[i]
+  f = vd[i+1]
+  if active(i):
+    vd[i] = fp_fma(b, d, e)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_fma(fp_neg(b), c, f)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_fma(x, y, z)` is the fused
+multiply-add computing `x*y + z` (argument order as IEEE 754
+`fusedMultiplyAdd`).
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcnmsacr_vs]
+== vfcnmsacr.vs
+
+Synopsis::
+Vector Floating-Point Complex Negated Multiply-Subtract-Accumulate Real Contribution (vector-scalar broadcast)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcnmsacr.vs vd, vs1, vs2, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x5,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x16,"type":2}]}
+....
+
+Description::
+Fused negative multiply-accumulate of the real-part contribution
+`R = Re(A) * B` from the accumulator xref:exts:C.adoc#udb:doc:ext:C[C] held in `vd`, computing `C - R`,
+where xref:exts:B.adoc#udb:doc:ext:B[B] is a complex scalar.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+`B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`, and `C = e + j*f`
+from the old value of `vd`. The result is:
+
+  vd[i]   = ((-a) * c) + e
+  vd[i+1] = ((-a) * d) + f
+
+This follows the RVV `nmsac` convention: `vd = vd - (vs1 * vs2)`.
+
+`vs1` holds a complex scalar element group that is used as the complex
+multiplier for all of the destination complex element pairs.
+
+`vs2` is a vector register group; each complex pair is read from the
+corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is
+reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+The destination `vd` register group must not overlap the register or
+register group that `vs1` refers to.
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+c = vs1[0]
+d = vs1[1]
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  e = vd[i]
+  f = vd[i+1]
+  if active(i):
+    vd[i] = fp_fma(fp_neg(a), c, e)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_fma(fp_neg(a), d, f)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_fma(x, y, z)` is the fused
+multiply-add computing `x*y + z` (argument order as IEEE 754
+`fusedMultiplyAdd`).
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcnmsacr_vv]
+== vfcnmsacr.vv
+
+Synopsis::
+Vector Floating-Point Complex Negated Multiply-Subtract-Accumulate Real Contribution (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcnmsacr.vv vd, vs1, vs2, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x16,"type":2}]}
+....
+
+Description::
+Fused negative multiply-accumulate of the real-part contribution
+`R = Re(A) * B` from the accumulator xref:exts:C.adoc#udb:doc:ext:C[C] held in `vd`, computing `C - R`.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`,
+`B = c + j*d` from `vs1`, and `C = e + j*f` from the old value of `vd`. The
+result is:
+
+  vd[i]   = ((-a) * c) + e
+  vd[i+1] = ((-a) * d) + f
+
+This follows the RVV `nmsac` convention: `vd = vd - (vs1 * vs2)`.
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  c = vs1[i]
+  d = vs1[i+1]
+  e = vd[i]
+  f = vd[i+1]
+  if active(i):
+    vd[i] = fp_fma(fp_neg(a), c, e)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_fma(fp_neg(a), d, f)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_fma(x, y, z)` is the fused
+multiply-add computing `x*y + z` (argument order as IEEE 754
+`fusedMultiplyAdd`).
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcnmuli_vs]
+== vfcnmuli.vs
+
+Synopsis::
+Vector Floating-Point Complex Negated Multiply Imaginary Contribution (vector-scalar broadcast)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcnmuli.vs vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x5,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x26,"type":2}]}
+....
+
+Description::
+Computes the negated imaginary-part contribution `-I = -(j * Im(A) * B)` of
+the full complex product `A * B`, where xref:exts:B.adoc#udb:doc:ext:B[B] is a complex scalar.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`. The result is:
+
+  vd[i]   = b * d
+  vd[i+1] = (-b) * c
+
+`vs1` holds a complex scalar element group that is used as the complex
+multiplier for all of the destination complex element pairs.
+
+`vs2` is a vector register group; each complex pair is read from the
+corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is
+reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+The destination `vd` register group must not overlap the register or
+register group that `vs1` refers to.
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+c = vs1[0]
+d = vs1[1]
+for i from vstart to vl-1 step 2:
+  b = vs2[i+1]
+  if active(i):
+    vd[i] = fp_mul(b, d)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_mul(fp_neg(b), c)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_mul(x, y)` is IEEE 754
+multiplication.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcnmuli_vv]
+== vfcnmuli.vv
+
+Synopsis::
+Vector Floating-Point Complex Negated Multiply Imaginary Contribution (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcnmuli.vv vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x26,"type":2}]}
+....
+
+Description::
+Computes the negated imaginary-part contribution `-I = -(j * Im(A) * B)` of
+the full complex product `A * B`.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` from `vs1`. The result is:
+
+  vd[i]   = b * d
+  vd[i+1] = (-b) * c
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  b = vs2[i+1]
+  c = vs1[i]
+  d = vs1[i+1]
+  if active(i):
+    vd[i] = fp_mul(b, d)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_mul(fp_neg(b), c)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_mul(x, y)` is IEEE 754
+multiplication.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcnmulr_vs]
+== vfcnmulr.vs
+
+Synopsis::
+Vector Floating-Point Complex Negated Multiply Real Contribution (vector-scalar broadcast)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcnmulr.vs vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x5,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x25,"type":2}]}
+....
+
+Description::
+Computes the negated real-part contribution `-R = -(Re(A) * B)` of the full
+complex product `A * B`, where xref:exts:B.adoc#udb:doc:ext:B[B] is a complex scalar.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` where `c = vs1[0]` and `d = vs1[1]`. The result is:
+
+  vd[i]   = (-a) * c
+  vd[i+1] = (-a) * d
+
+`vs1` holds a complex scalar element group that is used as the complex
+multiplier for all of the destination complex element pairs.
+
+`vs2` is a vector register group; each complex pair is read from the
+corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is
+reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+The destination `vd` register group must not overlap the register or
+register group that `vs1` refers to.
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+c = vs1[0]
+d = vs1[1]
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  if active(i):
+    vd[i] = fp_mul(fp_neg(a), c)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_mul(fp_neg(a), d)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_mul(x, y)` is IEEE 754
+multiplication.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
+| any
+|===
+
+
+
+
+[#udb:doc:inst:vfcnmulr_vv]
+== vfcnmulr.vv
+
+Synopsis::
+Vector Floating-Point Complex Negated Multiply Real Contribution (vector-vector)
+
+Base::
+
+[cols="1,1"]
+|===
+| RV32 | RV64
+
+| &#x2713;
+| &#x2713;
+|===
+
+Assembly::
+vfcnmulr.vv vd, vs2, vs1, vm
+
+Encoding::
+[wavedrom, ,svg,subs='attributes',width="100%"]
+....
+{"reg":[{"bits":7,"name": 0x57,"type":2},{"bits":5,"name": "vd","type":4},{"bits":3,"name": 0x1,"type":2},{"bits":5,"name": "vs1","type":4},{"bits":5,"name": "vs2","type":4},{"bits":1,"name": "vm","type":4},{"bits":6,"name": 0x25,"type":2}]}
+....
+
+Description::
+Computes the negated real-part contribution `-R = -(Re(A) * B)` of the full
+complex product `A * B`.
+
+For each complex element pair at even index `i`, let `A = a + j*b` from `vs2`
+and `B = c + j*d` from `vs1`. The result is:
+
+  vd[i]   = (-a) * c
+  vd[i+1] = (-a) * d
+
+Both `vs2` and `vs1` are vector register groups; each complex pair is read
+from the corresponding element indices. Odd xref:csrs:vl.adoc#udb:doc:csr:vl[vl] is supported; an odd
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is reserved.
+
+Supported SEW values are the same as for the standard vector floating-point
+arithmetic instructions. The instruction is reserved if `LMUL*VLEN < 2*SEW`
+(a vector register group must hold at least one complete complex element
+pair).
+
+Each output element is independently masked. Only active elements produce
+floating-point exception flags and update `vd`. On normal completion
+xref:csrs:vstart.adoc#udb:doc:csr:vstart[vstart] is cleared to zero.
+
+[source]
+----
+// reserved unless LMUL*VLEN >= 2*SEW
+for i from vstart to vl-1 step 2:
+  a = vs2[i]
+  c = vs1[i]
+  d = vs1[i+1]
+  if active(i):
+    vd[i] = fp_mul(fp_neg(a), c)
+  // i < vstart is prestart (unchanged); inactive elements follow VMA
+  if active(i+1):
+    vd[i+1] = fp_mul(fp_neg(a), d)
+  // inactive element at i+1 follows VMA
+// tail elements (vl <= idx < VLMAX) follow VTA
+----
+
+where `active(idx)` is `(idx >= vstart) && (idx < vl) && (vm || v0[idx])`;
+`fp_neg(x)` is the negation of `x`; `fp_mul(x, y)` is IEEE 754
+multiplication.
+
+
+Decode Variables::
+[width="100%", cols="1,2", options="header"]
+|===
+|Variable Name |Location
+|vm |$encoding[25]
+|vs2 |$encoding[24:20]
+|vs1 |$encoding[19:15]
+|vd |$encoding[11:7]
+|===
+
+Included in::
+
+
+[width="100%",cols="1,2",options="header"]
+|===
+| Extension | Version
+
+| *Zvfc*
 | any
 |===
 
